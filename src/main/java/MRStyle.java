@@ -38,8 +38,8 @@ public class MRStyle {
         SparkSession sc = SparkSession.builder().config(conf).getOrCreate();
         JavaSparkContext jc = JavaSparkContext.fromSparkContext(sc.sparkContext());
         // support wildcards
-        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair((PairFlatMapFunction<Tuple2<String, String>, String, MapNode>) stringStringTuple2 -> {
-            OSMParser os = new OSMParser(stringStringTuple2._2());
+        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
+            OSMParser os = new OSMParser(t._2());
             os.start();
             List<Tuple2<String, MapNode>> results = new ArrayList<>();
             os.getUpdateNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
@@ -50,23 +50,20 @@ public class MRStyle {
 
         Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
 
-        JavaPairRDD<String, MapNode> mapped = ze.mapToPair(new PairFunction<Tuple2<String, MapNode>, String, MapNode>() {
-            @Override
-            public Tuple2<String, MapNode> call(Tuple2<String, MapNode> t) throws Exception {
-                Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
-                match.ifPresent(e -> t._2().setPlz(e.getPlz()));
-                return t;
-            }
+        JavaPairRDD<String, MapNode> mapped = ze.mapToPair(t -> {
+            Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
+            match.ifPresent(e -> t._2().setPlz(e.getPlz()));
+            return t;
         });
 
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "delete").flatMap((FlatMapFunction<Tuple2<String, MapNode>, MapNode>) ns
+        sc.createDataFrame(mapped.filter(e -> e._1() == "delete").flatMap(ns
                 -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\deleted");
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "create").flatMap((FlatMapFunction<Tuple2<String, MapNode>, MapNode>) ns
+        sc.createDataFrame(mapped.filter(e -> e._1() == "create").flatMap(ns
                 -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\created");
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "update").flatMap((FlatMapFunction<Tuple2<String, MapNode>, MapNode>) ns
+        sc.createDataFrame(mapped.filter(e -> e._1() == "update").flatMap(ns
                 -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\updated");
 
 
