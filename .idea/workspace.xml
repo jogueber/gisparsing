@@ -33,11 +33,11 @@
       <file leaf-file-name="MRStyle.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/MRStyle.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="354">
-              <caret line="62" column="5" lean-forward="true" selection-start-line="62" selection-start-column="5" selection-end-line="62" selection-end-column="5" />
+            <state relative-caret-position="745">
+              <caret line="71" column="0" lean-forward="true" selection-start-line="71" selection-start-column="0" selection-end-line="71" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#2935#2966#0" expanded="true" />
+                <element signature="e#3652#3683#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -899,7 +899,7 @@
       <workItem from="1481277938495" duration="18428000" />
       <workItem from="1481529890564" duration="27154000" />
       <workItem from="1481618186796" duration="9740000" />
-      <workItem from="1481635567130" duration="9019000" />
+      <workItem from="1481635567130" duration="10003000" />
     </task>
     <servers />
   </component>
@@ -936,7 +936,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="106853000" />
+    <option name="totallyTimeSpent" value="107837000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -1437,11 +1437,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/MRStyle.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="354">
-          <caret line="62" column="5" lean-forward="true" selection-start-line="62" selection-start-column="5" selection-end-line="62" selection-end-column="5" />
+        <state relative-caret-position="745">
+          <caret line="71" column="0" lean-forward="true" selection-start-line="71" selection-start-column="0" selection-end-line="71" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#2935#2966#0" expanded="true" />
+            <element signature="e#3652#3683#0" expanded="true" />
           </folding>
         </state>
       </provider>
