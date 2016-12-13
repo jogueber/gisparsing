@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="osm" type="osmType"></xs:element>
+    <xs:complexType name="osmType">
+        <xs:sequence>
+            <xs:element name="api" type="apiType"></xs:element>
+        </xs:sequence>
+        <xs:attribute name="version" type="xs:decimal" use="required"
+                      fixed="0.6">
+        </xs:attribute>
+        <xs:attribute name="generator" type="xs:string" use="required">
+        </xs:attribute>
+    </xs:complexType>
+    <xs:element name="api" type="apiType"></xs:element>
+    <xs:complexType name="apiType">
+        <xs:sequence>
+            <xs:element name="version">
+                <xs:complexType>
+                    <xs:attribute name="minimum" type="xs:double" use="required"></xs:attribute>
+                    <xs:attribute name="maximum" type="xs:double" use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="area">
+                <xs:complexType>
+                    <xs:attribute name="maximum" type="xs:double" use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="tracepoints">
+                <xs:complexType>
+                    <xs:attribute name="per_page" type="xs:int" use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="waynodes">
+                <xs:complexType>
+                    <xs:attribute name="maximum" type="xs:int" use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="changesets">
+                <xs:complexType>
+                    <xs:attribute name="maximum_elements" type="xs:int"
+                                  use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="timeout">
+                <xs:complexType>
+                    <xs:attribute name="seconds" type="xs:int" use="required"></xs:attribute>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
