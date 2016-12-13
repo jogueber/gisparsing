@@ -58,7 +58,7 @@ public class SparkProduction {
         SparkSession sc = SparkSession.builder().config(conf).getOrCreate();
         JavaSparkContext jc = JavaSparkContext.fromSparkContext(sc.sparkContext());
 
-        //     Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
+           Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
 
         //  SQLContext sqlContext = new SQLContext(sc);
 
@@ -113,7 +113,7 @@ public class SparkProduction {
     }
 
     @SuppressWarnings("Duplicates")
-    private static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
+     public static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
         List<FeatureWrapper> ls = new ArrayList<>();
 
         final Map<String, Object> map = new HashMap<>();

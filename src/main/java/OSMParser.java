@@ -10,6 +10,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
 /**
  * Created by jguenther on 12.12.2016.
  */
-public class OSMParser implements  Runnable {
+public class OSMParser implements Runnable {
 
     private final GeometryBuilder builder;
     private XMLEventReader reader;
@@ -53,6 +54,21 @@ public class OSMParser implements  Runnable {
         } catch (XMLStreamException e) {
             e.printStackTrace();
         }
+    }
+
+    public OSMParser(String in) {
+        tags = new HashMap<>();
+
+        updateNodes = new ArrayList<>();
+        deleteNodes = new ArrayList<>();
+        newNodes = new ArrayList<>();
+        this.builder = new GeometryBuilder(DefaultGeographicCRS.WGS84);
+        try {
+            reader = XMLInputFactory.newInstance().createXMLEventReader(new StringReader(in));
+        } catch (XMLStreamException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public void clean() {
@@ -138,6 +154,7 @@ public class OSMParser implements  Runnable {
                     ps.setStreetName(tags.getOrDefault("addr:street", null));
                     ps.setCountry(tags.getOrDefault("addr:country", null));
                     ps.setCity(tags.getOrDefault("addr:city", null));
+                    ps.setType(mode);
 
                     switch (mode) {
                         case MODIFY:
