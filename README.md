@@ -18,7 +18,7 @@ mvn clean compile package
 Resultierendes JAR File aus dem `target` folder kann deployed werden. 
 
 ## Todos 
-Wir müssen prüfen wie es alles auf dem Cluster funktioniert. Insbesondere müssen wir inwweit wir relevante Dateien wie `hdfs-site.xml` und `core-site.xml` noch in das JAR hinzufügen müssen.
+Wir müssen prüfen wie es alles auf dem Cluster funktioniert. Insbesondere müssen wir in wie weit wir relevante Dateien wie `hdfs-site.xml` und `core-site.xml` noch in das JAR hinzufügen müssen.
 Weiterhin ist der Unit Test eher rudimentär (bis jetzt).
 
 ## Verwendete Tools
