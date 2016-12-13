@@ -54,8 +54,7 @@ public class SparkProduction {
 
         SparkConf conf = new SparkConf().setAppName(con.getString("spark.app")).setMaster(con.getString("spark.master"));
 
-        SparkSession sc = SparkSession.builder().config(conf).
-                config("spark.sql.warehouse.dir", "file:///C:/Users/jguenther/Downloads/").getOrCreate();
+        SparkSession sc = SparkSession.builder().config(conf).getOrCreate();
         JavaSparkContext jc = JavaSparkContext.fromSparkContext(sc.sparkContext());
 
         //     Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
@@ -82,6 +81,7 @@ public class SparkProduction {
         FileSystem fs = FileSystem.get(hdfsConf);
         Path recent = getMostRecentFile(con.getString("spark.plz.inputDir"), fs);
         FSDataInputStream in = null;
+
         in = fs.open(recent);
         OSMParser par = new OSMParser(in);
 
@@ -104,6 +104,7 @@ public class SparkProduction {
         sc.createDataFrame(deletedNodes, MapNode.class).write().parquet(pt + "\\delete_" + ts);
         sc.createDataFrame(newNodes, MapNode.class).write().parquet(pt + "\\new_" + ts);
         sc.stop();
+        fs.delete(recent, true);
     }
 
     @SuppressWarnings("Duplicates")
