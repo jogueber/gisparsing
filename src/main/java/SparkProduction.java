@@ -8,6 +8,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.spark.SparkConf;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.ReduceFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -74,37 +75,41 @@ public class SparkProduction {
 
         //Todo
         // String content = StringUtils.join(sc.read().textFile().collect());
+        JavaPairRDD<String, String> re = jc.wholeTextFiles(con.getString(con.getString("spark.plz.inputDir")));
 
 
         //Todo: Check on Cluster
         Configuration hdfsConf = new Configuration();
         FileSystem fs = FileSystem.get(hdfsConf);
         Path recent = getMostRecentFile(con.getString("spark.plz.inputDir"), fs);
-        FSDataInputStream in = null;
 
-        in = fs.open(recent);
-        OSMParser par = new OSMParser(in);
+        while (recent != null) {
+            FSDataInputStream in = null;
 
-        List<MapNode> updatedNodes = par.getUpdateNodes();
-        List<MapNode> deletedNodes = par.getDeleteNodes();
-        List<MapNode> newNodes = par.getNewNodes();
-        par.clean();
-        in.close();
+            in = fs.open(recent);
+            OSMParser par = new OSMParser(in);
 
-        List<FeatureWrapper> PLZ = extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE);
+            List<MapNode> updatedNodes = par.getUpdateNodes();
+            List<MapNode> deletedNodes = par.getDeleteNodes();
+            List<MapNode> newNodes = par.getNewNodes();
+            par.clean();
+            in.close();
 
-        updatedNodes = matchPLZ(updatedNodes, PLZ);
-        deletedNodes = matchPLZ(deletedNodes, PLZ);
-        newNodes = matchPLZ(newNodes, PLZ);
+            List<FeatureWrapper> PLZ = extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE);
+            // possibly write only one file
+            updatedNodes = matchPLZ(updatedNodes, PLZ);
+            deletedNodes = matchPLZ(deletedNodes, PLZ);
+            newNodes = matchPLZ(newNodes, PLZ);
 
-        String pt = con.getString("outPath");
-        LocalDateTime ts = LocalDateTime.now();
+            String pt = con.getString("outPath");
+            LocalDateTime ts = LocalDateTime.now();
 
-        sc.createDataFrame(updatedNodes, MapNode.class).write().parquet(pt + "\\update_" + ts);
-        sc.createDataFrame(deletedNodes, MapNode.class).write().parquet(pt + "\\delete_" + ts);
-        sc.createDataFrame(newNodes, MapNode.class).write().parquet(pt + "\\new_" + ts);
-        sc.stop();
-        fs.delete(recent, true);
+            sc.createDataFrame(updatedNodes, MapNode.class).write().parquet(pt + "\\update_" + ts);
+            sc.createDataFrame(deletedNodes, MapNode.class).write().parquet(pt + "\\delete_" + ts);
+            sc.createDataFrame(newNodes, MapNode.class).write().parquet(pt + "\\new_" + ts);
+            sc.stop();
+            fs.delete(recent, true);
+        }
     }
 
     @SuppressWarnings("Duplicates")

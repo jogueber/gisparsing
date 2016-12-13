@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Created by jguenther on 12.12.2016.
  */
-public class OSMParser {
+public class OSMParser implements  Runnable {
 
     private final GeometryBuilder builder;
     private XMLEventReader reader;
@@ -157,4 +157,12 @@ public class OSMParser {
     }
 
 
+    @Override
+    public void run() {
+        try {
+            this.start();
+        } catch (XMLStreamException e) {
+            e.printStackTrace();
+        }
+    }
 }
