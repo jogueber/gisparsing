@@ -116,14 +116,14 @@ public class MRStyle {
     public static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
         List<FeatureWrapper> ls = new ArrayList<>();
 
-/*        Configuration conf = new Configuration();
+        Configuration conf = new Configuration();
         FileSystem fS = FileSystem.get(conf);
 
         String s = "/tmp/plz";
-        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));*/
+        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));
         final Map<String, Object> map = new HashMap<>();
         //todo -> check if it breaks with HDFS
-        logger.info("File Path:" + (new File(path)).toURI().toURL());
+        logger.info("File Path:" + (new File(s)).toURI().toURL());
         map.put("url", (new File(path)).toURI().toURL());
         logger.info("Map Size:" + map.size());
         logger.info("Available DS:" + DataStoreFinder.getAllDataStores());
