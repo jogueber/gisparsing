@@ -12,7 +12,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -41,16 +40,18 @@ import java.util.*;
  */
 public class MRStyle {
 
+    public static Logger logger;
+
     public static void main(String[] args) {
 
         Config con = ConfigFactory.load("application.conf");
 
-        Logger ls = LogManager.getLogger("MRStyle");
+        logger = LogManager.getLogger("MRStyle");
 
         final String s = con.getString("spark.app");
 
 
-        SparkConf conf = new SparkConf().setAppName(s);
+        SparkConf conf = new SparkConf().setAppName(s).setMaster("local");
         String warehouse = con.getString("spark.sql.warehouse.dir");
         if (warehouse != null || !warehouse.isEmpty()) {
             conf.set("spark.sql.warehouse.dir", warehouse);
@@ -58,15 +59,15 @@ public class MRStyle {
 
 
         JavaSparkContext jc = new JavaSparkContext(conf);
-        ls.info("Context successfully initialized");
+        logger.info("Context successfully initialized");
 
         Broadcast<List<FeatureWrapper>> plzLs = null;
         try {
             plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
-            ls.info("Successfully read PLZ");
+            logger.info("Successfully read PLZ");
         } catch (IOException e) {
             e.printStackTrace();
-            ls.error("Error Reading PLZ");
+            logger.error("Error Reading PLZ");
         }
 
 
@@ -115,14 +116,17 @@ public class MRStyle {
     public static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
         List<FeatureWrapper> ls = new ArrayList<>();
 
-        Configuration conf = new Configuration();
+/*        Configuration conf = new Configuration();
         FileSystem fS = FileSystem.get(conf);
 
         String s = "/tmp/plz";
-        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));
+        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));*/
         final Map<String, Object> map = new HashMap<>();
         //todo -> check if it breaks with HDFS
-        map.put("url", (new File(s)).toURI().toURL());
+        logger.info("File Path:" + (new File(path)).toURI().toURL());
+        map.put("url", (new File(path)).toURI().toURL());
+        logger.info("Map Size:" + map.size());
+        logger.info("Available DS:" + DataStoreFinder.getAllDataStores());
         DataStore dataStore = DataStoreFinder.getDataStore(map);
         final String typeName = dataStore.getTypeNames()[0];
 
