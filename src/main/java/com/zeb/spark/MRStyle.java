@@ -43,11 +43,14 @@ public class MRStyle {
 
     public static void main(String[] args) {
 
-        Config con = ConfigFactory.load();
+        Config con = ConfigFactory.load("application.conf");
 
         Logger ls = LogManager.getLogger("MRStyle");
 
-        SparkConf conf = new SparkConf().setAppName(con.getString("spark.app")).setMaster(con.getString("spark.master"));
+        final String s = con.getString("spark.app");
+
+
+        SparkConf conf = new SparkConf().setAppName(s);
         String warehouse = con.getString("spark.sql.warehouse.dir");
         if (warehouse != null || !warehouse.isEmpty()) {
             conf.set("spark.sql.warehouse.dir", warehouse);
@@ -68,7 +71,7 @@ public class MRStyle {
 
 
         // support wildcards
-        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair((PairFlatMapFunction<Tuple2<String, String>, String, MapNode>) t -> {
+        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
             OSMParser os = new OSMParser(t._2());
             os.start();
             List<Tuple2<String, MapNode>> results = new ArrayList<>();
@@ -101,8 +104,7 @@ public class MRStyle {
         // For Version 1.6.0
         SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
 
-        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") +
-                "\\extracts" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
+        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "\\extracts" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
 
 
         deleteFiles(con.getString("spark.plz.inputDir"));
@@ -113,9 +115,14 @@ public class MRStyle {
     public static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
         List<FeatureWrapper> ls = new ArrayList<>();
 
+        Configuration conf = new Configuration();
+        FileSystem fS = FileSystem.get(conf);
+
+        String s = "/tmp/plz";
+        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));
         final Map<String, Object> map = new HashMap<>();
         //todo -> check if it breaks with HDFS
-        map.put("url", (new File(path)).toURI().toURL());
+        map.put("url", (new File(s)).toURI().toURL());
         DataStore dataStore = DataStoreFinder.getDataStore(map);
         final String typeName = dataStore.getTypeNames()[0];
 
@@ -161,7 +168,5 @@ public class MRStyle {
             e.printStackTrace();
             e.initCause(new IOException("Error Deleting files!"));
         }
-
-
     }
 }
