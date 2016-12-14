@@ -46,6 +46,7 @@ Network Trash Folder
 Temporary Items
 .apdisk
 *.class
+.idea
 target/
 target/classes/251.osc
 src/main/scala/Spark-Gis.scala
