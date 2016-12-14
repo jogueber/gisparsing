@@ -1,3 +1,4 @@
+import com.google.common.collect.Lists;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.spark.SparkConf;
@@ -9,7 +10,13 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureSource;
@@ -22,6 +29,8 @@ import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -34,9 +43,17 @@ public class MRStyle {
         Config con = ConfigFactory.load();
 
         SparkConf conf = new SparkConf().setAppName(con.getString("spark.app")).setMaster(con.getString("spark.master"));
+        String warehouse=con.getString("spark.sql.warehouse.dir");
+        if(warehouse!=null||!warehouse.isEmpty()){
+            conf.set("spark.sql.warehouse.dir",warehouse);
+        }
 
         SparkSession sc = SparkSession.builder().config(conf).getOrCreate();
+
         JavaSparkContext jc = JavaSparkContext.fromSparkContext(sc.sparkContext());
+        Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
+
+
         // support wildcards
         JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
             OSMParser os = new OSMParser(t._2());
@@ -48,7 +65,6 @@ public class MRStyle {
             return results.iterator();
         });
 
-        Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
 
         JavaPairRDD<String, MapNode> mapped = ze.mapToPair(t -> {
             Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
@@ -57,14 +73,19 @@ public class MRStyle {
         });
 
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "delete").flatMap(ns
-                -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\deleted");
+        JavaRDD<MapNode> newNodes = mapped.filter(e -> e._1() == "create").flatMap(ns
+                -> Lists.newArrayList(ns._2()).iterator());
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "create").flatMap(ns
-                -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\created");
 
-        sc.createDataFrame(mapped.filter(e -> e._1() == "update").flatMap(ns
-                -> Arrays.asList(ns._2()).iterator()), MapNode.class).write().parquet(con.getString("spark.plz.outputDir") + "\\updated");
+        JavaRDD<Row> converted = mapped.map(el -> {
+            MapNode ns = el._2();
+            return RowFactory.create(ns.getTimeStamp(), ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(),
+                    ns.getName(), ns.getOperator(), ns.getType(), ns.getNodeId(), ns.getChangeSetId(), ns.getVersion(),
+                    ns.getPlz());
+        });
+
+        // Write everything in one file
+        sc.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir")+"\\diff" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE)+".parquet");
 
 
     }
@@ -92,5 +113,21 @@ public class MRStyle {
         dataStore.dispose();
         return ls;
 
+    }
+    //Notwendig weil er die Bounding box nicht mag
+    public static StructType getSchema() {
+        String schemaString = "timeStamp streetName city country openingHours name operator type";
+        List<StructField> fields = new ArrayList<>();
+        for (String fieldName : schemaString.split(" ")) {
+            StructField field = DataTypes.createStructField(fieldName, DataTypes.StringType, true);
+            fields.add(field);
+        }
+
+        schemaString = "nodeId changeSetId version plz";
+        for (String fieldName : schemaString.split(" ")) {
+            StructField field = DataTypes.createStructField(fieldName, DataTypes.LongType, true);
+            fields.add(field);
+        }
+        return DataTypes.createStructType(fields);
     }
 }
