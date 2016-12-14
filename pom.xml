@@ -7,7 +7,7 @@
     <groupId>org.zeb.</groupId>
     <artifactId>plzmerge</artifactId>
     <version>1.0</version>
-    <name>Simple Project</name>
+    <name>Gis Parsing</name>
     <packaging>jar</packaging>
     <build>
         <plugins>
