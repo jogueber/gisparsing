@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geotools.version>17-SNAPSHOT
         </geotools.version>
-        <spark.version>2.0.0</spark.version>
+        <spark.version>1.6.0</spark.version>
     </properties>
 
     <dependencies>
@@ -143,6 +143,7 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-junit</artifactId>
             <version>2.0.0.0</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

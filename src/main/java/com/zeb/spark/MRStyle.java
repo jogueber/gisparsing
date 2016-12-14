@@ -12,10 +12,11 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -52,9 +53,8 @@ public class MRStyle {
             conf.set("spark.sql.warehouse.dir", warehouse);
         }
 
-        SparkSession sc = SparkSession.builder().config(conf).getOrCreate();
 
-        JavaSparkContext jc = JavaSparkContext.fromSparkContext(sc.sparkContext());
+        JavaSparkContext jc = new JavaSparkContext(conf);
         ls.info("Context successfully initialized");
 
         Broadcast<List<FeatureWrapper>> plzLs = null;
@@ -68,16 +68,15 @@ public class MRStyle {
 
 
         // support wildcards
-        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
+        JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair((PairFlatMapFunction<Tuple2<String, String>, String, MapNode>) t -> {
             OSMParser os = new OSMParser(t._2());
             os.start();
             List<Tuple2<String, MapNode>> results = new ArrayList<>();
             os.getUpdateNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
             os.getNewNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
             os.getDeleteNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
-            return results.iterator();
+            return results;
         });
-
 
         final Broadcast<List<FeatureWrapper>> finalPlzLs = plzLs;
         final JavaPairRDD<String, MapNode> mapped = ze.mapToPair(t -> {
@@ -88,7 +87,7 @@ public class MRStyle {
 
 
         final JavaRDD<MapNode> newNodes = mapped.filter(e -> e._1() == "create").flatMap(ns
-                -> Lists.newArrayList(ns._2()).iterator());
+                -> Lists.newArrayList(ns._2()));
 
 
         final JavaRDD<Row> converted = mapped.map(el -> {
@@ -99,8 +98,11 @@ public class MRStyle {
         });
 
         // Write everything in one file
-        sc.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "\\diff"
-                + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
+        // For Version 1.6.0
+        SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
+
+        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") +
+                "\\extracts" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
 
 
         deleteFiles(con.getString("spark.plz.inputDir"));
