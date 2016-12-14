@@ -1,3 +1,5 @@
+package com.zeb.spark;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,3 +1,5 @@
+package com.zeb.spark;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.opengis.feature.simple.SimpleFeature;

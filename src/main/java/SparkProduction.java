@@ -1,25 +1,20 @@
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.apache.commons.lang.StringUtils;
+import com.zeb.spark.FeatureWrapper;
+import com.zeb.spark.MapNode;
+import com.zeb.spark.OSMParser;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.spark.SparkConf;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.ReduceFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.sql.SQLContext;
 
-import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.udf;
 
 import org.apache.spark.sql.*;
-import org.apache.spark.sql.api.java.UDF1;
-import org.apache.spark.sql.api.java.UDF2;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureSource;
@@ -28,20 +23,12 @@ import org.geotools.feature.FeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
-import org.opengis.geometry.BoundingBox;
-import scala.Function0;
-import scala.collection.mutable.Seq;
 
 
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

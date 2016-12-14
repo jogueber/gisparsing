@@ -1,3 +1,5 @@
+package com.zeb.spark;
+
 import com.google.common.collect.Lists;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -10,12 +12,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
@@ -47,7 +44,7 @@ public class MRStyle {
 
         Config con = ConfigFactory.load();
 
-        Logger ls = LogManager.getLogger(MRStyle.class);
+        Logger ls = LogManager.getLogger("MRStyle");
 
         SparkConf conf = new SparkConf().setAppName(con.getString("spark.app")).setMaster(con.getString("spark.master"));
         String warehouse = con.getString("spark.sql.warehouse.dir");
@@ -102,7 +99,8 @@ public class MRStyle {
         });
 
         // Write everything in one file
-        sc.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "\\diff" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
+        sc.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "\\diff"
+                + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
 
 
         deleteFiles(con.getString("spark.plz.inputDir"));

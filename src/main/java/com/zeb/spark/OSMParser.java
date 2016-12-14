@@ -1,3 +1,6 @@
+package com.zeb.spark;
+
+import com.zeb.spark.MapNode;
 import lombok.Getter;
 import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeometryBuilder;

@@ -1,6 +1,4 @@
-import com.google.common.io.Resources;
-import org.apache.parquet.filter.ColumnPredicates;
-import org.junit.Before;
+import com.zeb.spark.OSMParser;
 import org.junit.Test;
 
 import javax.xml.stream.XMLStreamException;
@@ -9,12 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
