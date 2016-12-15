@@ -31,9 +31,12 @@ import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by jguenther on 13.12.2016.
@@ -44,31 +47,30 @@ public class MRStyle {
 
     public static void main(String[] args) {
 
-        Config con = ConfigFactory.load("application.conf");
 
         logger = LogManager.getLogger("MRStyle");
 
-        final String s = con.getString("spark.app");
+        Config con = ConfigFactory.load("application.conf");
 
-
-        SparkConf conf = new SparkConf().setAppName(s).setMaster("local");
-        String warehouse = con.getString("spark.sql.warehouse.dir");
-        if (warehouse != null || !warehouse.isEmpty()) {
-            conf.set("spark.sql.warehouse.dir", warehouse);
+        URL file = MRStyle.class.getClassLoader().getResource("plz-gebiete.shp");
+        checkNotNull(file);
+        List<FeatureWrapper> feat = null;
+        try {
+            feat = extractFeatures(file, Filter.INCLUDE);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+
+        SparkConf conf = new SparkConf().setAppName("plzmerging");
 
 
         JavaSparkContext jc = new JavaSparkContext(conf);
         logger.info("Context successfully initialized");
 
-        Broadcast<List<FeatureWrapper>> plzLs = null;
-        try {
-            plzLs = jc.broadcast(extractFeatures(con.getString("spark.plz.inputPLZ"), Filter.INCLUDE));
-            logger.info("Successfully read PLZ");
-        } catch (IOException e) {
-            e.printStackTrace();
-            logger.error("Error Reading PLZ");
-        }
+
+        Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(feat);
+        logger.info("Successfully read PLZ");
 
 
         // support wildcards
@@ -82,9 +84,9 @@ public class MRStyle {
             return results;
         });
 
-        final Broadcast<List<FeatureWrapper>> finalPlzLs = plzLs;
+
         final JavaPairRDD<String, MapNode> mapped = ze.mapToPair(t -> {
-            Optional<FeatureWrapper> match = finalPlzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
+            Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
             match.ifPresent(e -> t._2().setPlz(e.getPlz()));
             return t;
         });
@@ -96,17 +98,19 @@ public class MRStyle {
 
         final JavaRDD<Row> converted = mapped.map(el -> {
             MapNode ns = el._2();
+            Long plz = ns.getPlz() == null ? 0L : Long.valueOf(ns.getPlz());
+
             return RowFactory.create(ns.getTimeStamp(), ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(),
-                    ns.getName(), ns.getOperator(), ns.getType(), ns.getNodeId(), ns.getChangeSetId(), ns.getVersion(),
-                    ns.getPlz());
+                    ns.getName(), ns.getOperator(), ns.getType(), ns.getNodeId(), ns.getChangeSetId(), Long.valueOf(String.valueOf(ns.getVersion())),
+                    plz);
         });
 
         // Write everything in one file
         // For Version 1.6.0
         SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
 
-        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "\\extracts" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".parquet");
-
+        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "/extracts" + System.currentTimeMillis() + ".parquet");
+        converted.rdd().sa
 
         deleteFiles(con.getString("spark.plz.inputDir"));
 
@@ -115,15 +119,15 @@ public class MRStyle {
     @SuppressWarnings("Duplicates")
     public static List<FeatureWrapper> extractFeatures(String path, Filter filter) throws IOException {
         List<FeatureWrapper> ls = new ArrayList<>();
-
+/*
         Configuration conf = new Configuration();
         FileSystem fS = FileSystem.get(conf);
 
         String s = "/tmp/plz";
-        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));
+        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));*/
         final Map<String, Object> map = new HashMap<>();
         //todo -> check if it breaks with HDFS
-        logger.info("File Path:" + (new File(s)).toURI().toURL());
+        logger.info("File Path:" + (new File(path)).toURI().toURL());
         map.put("url", (new File(path)).toURI().toURL());
         logger.info("Map Size:" + map.size());
         logger.info("Available DS:" + DataStoreFinder.getAllDataStores());
@@ -144,6 +148,40 @@ public class MRStyle {
         return ls;
 
     }
+
+    @SuppressWarnings("Duplicates")
+    public static List<FeatureWrapper> extractFeatures(URL path, Filter filter) throws IOException {
+        List<FeatureWrapper> ls = new ArrayList<>();
+/*
+        Configuration conf = new Configuration();
+        FileSystem fS = FileSystem.get(conf);
+
+        String s = "/tmp/plz";
+        fS.copyToLocalFile(false, new Path(path), new Path(new File(s).toURI()));*/
+        final Map<String, Object> map = new HashMap<>();
+        //todo -> check if it breaks with HDFS
+
+        map.put("url", path);
+        //   logger.info("Map Size:" +map.get);
+        //   logger.info("Available DS:" + DataStoreFinder.getAllDataStores());
+        DataStore dataStore = DataStoreFinder.getDataStore(map);
+        final String typeName = dataStore.getTypeNames()[0];
+
+        FeatureSource<SimpleFeatureType, SimpleFeature> source = dataStore
+                .getFeatureSource(typeName);
+        FeatureCollection<SimpleFeatureType, SimpleFeature> collection = source.getFeatures(filter);
+        try (FeatureIterator<SimpleFeature> features = collection.features()) {
+            while (features.hasNext()) {
+                SimpleFeature fs = features.next();
+                ls.add(new FeatureWrapper(fs));
+            }
+            features.close();
+        }
+        dataStore.dispose();
+        return ls;
+
+    }
+
 
     //Notwendig weil er die Bounding box nicht mag
     public static StructType getSchema() {

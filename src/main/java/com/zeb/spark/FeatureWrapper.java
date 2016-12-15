@@ -7,6 +7,8 @@ import org.opengis.geometry.BoundingBox;
 
 import java.io.Serializable;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Created by jguenther on 09.12.2016.
  * <p>
@@ -22,7 +24,6 @@ public class FeatureWrapper implements Serializable {
     private BoundingBox bounds;
 
 
-
     public FeatureWrapper(Integer plz, BoundingBox bx) {
         this.plz = plz;
         this.bounds = bx;
@@ -30,9 +31,9 @@ public class FeatureWrapper implements Serializable {
 
     public FeatureWrapper(SimpleFeature fs) {
         this.bounds = fs.getBounds();
+        checkNotNull(fs.getAttribute("plz"));
         this.plz = Integer.valueOf((String) fs.getAttribute("plz"));
     }
-
 
 
 }

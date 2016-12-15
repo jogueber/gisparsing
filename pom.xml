@@ -51,7 +51,11 @@
                         </filter>
                     </filters>
                     <finalName>uber-${project.artifactId}-${project.version}</finalName>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
                 </configuration>
+
             </plugin>
         </plugins>
     </build>
@@ -60,6 +64,7 @@
         <geotools.version>17-SNAPSHOT
         </geotools.version>
         <spark.version>1.6.0</spark.version>
+        <server>provided</server>
     </properties>
 
     <dependencies>
@@ -83,6 +88,7 @@
             <groupId>org.geotools</groupId>
             <artifactId>gt-xml</artifactId>
             <version>16.0</version>
+
         </dependency>
 
         <!--Spark-->
@@ -91,15 +97,14 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
-
+            <scope>${server}</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.11</artifactId>
             <version>${spark.version}</version>
-
+            <scope>${server}</scope>
         </dependency>
-
 
 
         <!--Other Stuff-->
