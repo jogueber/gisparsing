@@ -150,7 +150,10 @@ public class OSMParser implements Runnable {
                     }
                 }
                 // only append if banks or atms
-                if (tags.keySet().contains("amenity") && this.keys.contains(tags.get("amenity"))) {
+                if ((tags.keySet().contains("amenity") && this.keys.contains(tags.get("amenity")))
+                        // Take also shops
+                        || tags.keySet().contains("shop")
+                        ) {
                     MapNode ps = new MapNode();
                     // Nice casting^^
                     ps.setLon(Double.valueOf(lon));
@@ -164,7 +167,7 @@ public class OSMParser implements Runnable {
                     if (plz != null) {
                         ps.setPlz((plz));
                     }
-                    ps.setNodeType(tags.get("amenity"));
+                    ps.setNodeType(tags.getOrDefault("amenity", tags.get("shop")));
                     ps.setTimeStamp(Instant.parse(timeStamp));
                     ps.setOpeningHours(tags.getOrDefault("opening_hours", null));
                     ps.setOperator(tags.getOrDefault("operator", null));

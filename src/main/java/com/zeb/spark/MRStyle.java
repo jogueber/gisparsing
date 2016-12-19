@@ -90,6 +90,8 @@ public class MRStyle {
         final JavaPairRDD<String, MapNode> mapped = ze.mapToPair(t -> {
             Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
             match.ifPresent(e -> t._2().setPlz(e.getPlz()));
+            //Set Country for all that are in Germany
+            match.ifPresent(e->t._2.setCountry("DE"));
             return t;
         });
 
@@ -98,7 +100,6 @@ public class MRStyle {
             MapNode ns = el._2();
             return RowFactory.create(
                     //String values
-
                     ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(), ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getPlz(),
                     //Long Values
                     ns.getNodeId(), ns.getChangeSetId(), ns.getVersion(),
@@ -107,8 +108,6 @@ public class MRStyle {
                     //Date Values
                     java.sql.Timestamp.from(ns.getTimeStamp()));
         });
-
-        converted.count();
 
         // Write everything in one file
         // For Version 1.6.0
@@ -124,8 +123,6 @@ public class MRStyle {
             logger.info("Sample Output:" + converted.takeSample(false, 1).get(0).toString());
             deleteFiles(con.getString("spark.plz.inputDir"));
         }
-
-
 
 
         jc.stop();
