@@ -51,3 +51,7 @@ target/
 target/classes/251.osc
 src/main/scala/Spark-Gis.scala
 *.osc
+src/main/resources/plz-gebiete.dbf
+src/main/resources/plz-gebiete.prj
+src/main/resources/plz-gebiete.shp
+src/main/resources/plz-gebiete.shx
