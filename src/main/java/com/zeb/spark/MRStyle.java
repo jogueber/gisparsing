@@ -75,7 +75,6 @@ public class MRStyle {
         Broadcast<List<String>> key = jc.broadcast(con.getStringList("spark.plz.keys"));
 
 
-
         // support wildcards
         JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
             OSMParser os = new OSMParser(t._2(), key.getValue());
@@ -95,27 +94,39 @@ public class MRStyle {
         });
 
 
-        final JavaRDD<MapNode> newNodes = mapped.filter(e -> e._1() == "create").flatMap(ns
-                -> Lists.newArrayList(ns._2()));
-
-
         final JavaRDD<Row> converted = mapped.map(el -> {
             MapNode ns = el._2();
-            Long plz = ns.getPlz() == null ? 0L : Long.valueOf(ns.getPlz());
+            return RowFactory.create(
+                    //String values
 
-            return RowFactory.create(ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(),
-                    ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getNodeId(), ns.getChangeSetId(), Long.valueOf(String.valueOf(ns.getVersion())),
-                    plz, ns.getLon(), ns.getLat(), ns.getTimeStamp());
+                    ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(), ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getPlz(),
+                    //Long Values
+                    ns.getNodeId(), ns.getChangeSetId(), ns.getVersion(),
+                    // Double Values
+                    ns.getLon(), ns.getLat(),
+                    //Date Values
+                    java.sql.Timestamp.from(ns.getTimeStamp()));
         });
+
+        converted.count();
 
         // Write everything in one file
         // For Version 1.6.0
+
         final SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
 
-        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "/extracts" + System.currentTimeMillis() + ".parquet");
+        sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "extracts" + System.currentTimeMillis() + ".parquet");
+        logger.info("Completed writing files");
 
 
-        deleteFiles(con.getString("spark.plz.inputDir"));
+        if (con.getBoolean("spark.plz.debug")) {
+            logger.info("The result should contain " + converted.count() + " Rows");
+            logger.info("Sample Output:" + converted.takeSample(false, 1).get(0).toString());
+            deleteFiles(con.getString("spark.plz.inputDir"));
+        }
+
+
+
 
         jc.stop();
 
@@ -190,14 +201,14 @@ public class MRStyle {
 
     //Notwendig weil er die Bounding box nicht mag
     public static StructType getSchema() {
-        String schemaString = "timeStamp streetName city country openingHours name operator datatype nodeType";
+        String schemaString = "streetName city country openingHours name operator datatype nodeType plz";
         List<StructField> fields = new ArrayList<>();
         for (String fieldName : schemaString.split(" ")) {
             StructField field = DataTypes.createStructField(fieldName, DataTypes.StringType, true);
             fields.add(field);
         }
 
-        schemaString = "nodeId changeSetId version plz";
+        schemaString = "nodeId changeSetId version";
         for (String fieldName : schemaString.split(" ")) {
             StructField field = DataTypes.createStructField(fieldName, DataTypes.LongType, true);
             fields.add(field);
@@ -215,6 +226,7 @@ public class MRStyle {
     }
 
     public static void deleteFiles(String path) {
+        logger.info("Starting to delete files");
         Configuration conf = new Configuration();
         FileSystem fs = null;
         try {

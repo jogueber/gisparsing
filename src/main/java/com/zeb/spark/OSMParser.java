@@ -41,6 +41,9 @@ public class OSMParser implements Runnable {
     Set<String> keys;
 
     @Getter
+    private List<MapNode> malFormed = new ArrayList<>();
+
+    @Getter
     private List<MapNode> updateNodes;
     @Getter
     private List<MapNode> deleteNodes;
@@ -48,7 +51,7 @@ public class OSMParser implements Runnable {
     private List<MapNode> newNodes;
 
 
-    public OSMParser(InputStream is,Collection<String> keys) {
+    public OSMParser(InputStream is, Collection<String> keys) {
 
         this.keys = Sets.newHashSet(keys);
         // Check
@@ -154,14 +157,14 @@ public class OSMParser implements Runnable {
                     ps.setLat(Double.valueOf(lat));
                     ps.setBounds(new Envelope2D(builder.createPoint(Double.valueOf(lon), Double.valueOf(lat)).getEnvelope()));
                     ps.setNodeId(Long.valueOf(nodeId));
-                    ps.setVersion(Integer.valueOf(version));
+                    ps.setVersion(Long.valueOf(version));
                     ps.setChangeSetId(Long.valueOf(changeset));
                     //Tag Attributes -> can be empty
                     String plz = tags.getOrDefault("addr:postcode", null);
                     if (plz != null) {
-                        ps.setPlz(Integer.valueOf(plz));
+                        ps.setPlz((plz));
                     }
-                    ps.setDataType(tags.get("amenity"));
+                    ps.setNodeType(tags.get("amenity"));
                     ps.setTimeStamp(Instant.parse(timeStamp));
                     ps.setOpeningHours(tags.getOrDefault("opening_hours", null));
                     ps.setOperator(tags.getOrDefault("operator", null));
@@ -180,6 +183,9 @@ public class OSMParser implements Runnable {
                             break;
                         case DELETE:
                             deleteNodes.add(ps);
+                            break;
+                        default:
+                            malFormed.add(ps);
                             break;
                     }
                 }

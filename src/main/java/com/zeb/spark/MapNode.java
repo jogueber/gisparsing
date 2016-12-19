@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * Created by jguenther on 12.12.2016.
@@ -21,7 +20,7 @@ public class MapNode extends FeatureWrapper {
 
     private long changeSetId;
 
-    private int version;
+    private long version;
 
     public Instant timeStamp;
 
@@ -39,7 +38,6 @@ public class MapNode extends FeatureWrapper {
 
     //UPDATE,DELETE, CREATE
     private String dataType;
-
 
     private String nodeType;
 

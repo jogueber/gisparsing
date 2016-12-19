@@ -39,13 +39,14 @@ public class ParserTest {
     public void assertFind() throws IOException, URISyntaxException {
         Config con = ConfigFactory.load("application.conf");
 
-        InputStream in = Files.newInputStream(new File(this.getClass().getClassLoader().getResource("251.osc").toURI()).toPath(), StandardOpenOption.READ);
+        InputStream in = Files.newInputStream(new File(this.getClass().getClassLoader().getResource("000028937.osc").toURI()).toPath(), StandardOpenOption.READ);
         OSMParser parser = new OSMParser(in, con.getStringList("spark.plz.keys"));
         try {
             parser.start();
         } catch (XMLStreamException e) {
             e.printStackTrace();
         }
+        assertThat("Malformed Nodes occured", parser.getMalFormed(), empty());
         assertThat("Update Nodes are empty; check if the test data contains updated data that should be in the result set", parser.getUpdateNodes(), not(empty()));
         assertThat("Deleted Nodes are empty; Ensure that the test data contains not deleted nodes that should be parsed", parser.getDeleteNodes(), not(empty()));
         assertThat("New nodes are empty,ensure that the test data does not contain any new nodes that should be parsed", parser.getNewNodes(), not(empty()));

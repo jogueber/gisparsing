@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @NoArgsConstructor
 public class FeatureWrapper implements Serializable {
 
-    private Integer plz;
+    private String plz;
 
     private BoundingBox bounds;
 
@@ -28,11 +28,10 @@ public class FeatureWrapper implements Serializable {
     private double lat;
 
 
-
     public FeatureWrapper(SimpleFeature fs) {
         this.bounds = fs.getBounds();
         checkNotNull(fs.getAttribute("plz"));
-        this.plz = Integer.valueOf((String) fs.getAttribute("plz"));
+        this.plz = (String) fs.getAttribute("plz");
     }
 
 
