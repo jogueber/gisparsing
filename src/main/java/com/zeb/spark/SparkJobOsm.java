@@ -1,6 +1,5 @@
 package com.zeb.spark;
 
-import com.google.common.collect.Lists;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -32,8 +31,6 @@ import scala.Tuple2;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -41,18 +38,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Created by jguenther on 13.12.2016.
  */
-public class MRStyle {
+public class SparkJobOsm {
 
     public static Logger logger;
 
     public static void main(String[] args) {
 
 
-        logger = LogManager.getLogger("MRStyle");
+        logger = LogManager.getLogger("SparkJobOsm");
 
         Config con = ConfigFactory.load("application.conf");
 
-        URL file = MRStyle.class.getClassLoader().getResource("plz-gebiete.shp");
+        URL file = SparkJobOsm.class.getClassLoader().getResource("plz-gebiete.shp");
         checkNotNull(file);
         List<FeatureWrapper> feat = null;
         try {
