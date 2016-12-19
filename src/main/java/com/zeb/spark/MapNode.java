@@ -4,8 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+
 /**
  * Created by jguenther on 12.12.2016.
+ *
+ * Datatype
  */
 @Data
 @AllArgsConstructor
@@ -18,7 +23,7 @@ public class MapNode extends FeatureWrapper {
 
     private int version;
 
-    public String timeStamp;
+    public Instant timeStamp;
 
     private String streetName;
 
@@ -32,6 +37,10 @@ public class MapNode extends FeatureWrapper {
 
     private String operator;
 
-    private String type;
+    //UPDATE,DELETE, CREATE
+    private String dataType;
+
+
+    private String nodeType;
 
 }

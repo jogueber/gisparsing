@@ -1,5 +1,6 @@
 package com.zeb.spark;
 
+import com.google.common.collect.Sets;
 import com.zeb.spark.MapNode;
 import lombok.Getter;
 import org.geotools.geometry.Envelope2D;
@@ -14,9 +15,10 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Created by jguenther on 12.12.2016.
@@ -33,9 +35,10 @@ public class OSMParser implements Runnable {
 
     private static final String MODIFY = "modify";
     private static final String DELETE = "delete";
-    private static final String CREATE = "CREATE";
+    private static final String CREATE = "create";
     private static final String NODE = "node";
-    private static final String ATM = "atm";
+
+    Set<String> keys;
 
     @Getter
     private List<MapNode> updateNodes;
@@ -44,9 +47,13 @@ public class OSMParser implements Runnable {
     @Getter
     private List<MapNode> newNodes;
 
-    public OSMParser(InputStream is) {
+
+    public OSMParser(InputStream is,Collection<String> keys) {
+
+        this.keys = Sets.newHashSet(keys);
         // Check
         tags = new HashMap<>();
+
 
         updateNodes = new ArrayList<>();
         deleteNodes = new ArrayList<>();
@@ -59,7 +66,9 @@ public class OSMParser implements Runnable {
         }
     }
 
-    public OSMParser(String in) {
+    public OSMParser(String in, Collection<String> keys) {
+        this.keys = Sets.newHashSet(keys);
+
         tags = new HashMap<>();
 
         updateNodes = new ArrayList<>();
@@ -138,9 +147,11 @@ public class OSMParser implements Runnable {
                     }
                 }
                 // only append if banks or atms
-                if (tags.keySet().contains("amenity") && tags.get("amenity").matches("^(bank|atm)")) {
+                if (tags.keySet().contains("amenity") && this.keys.contains(tags.get("amenity"))) {
                     MapNode ps = new MapNode();
                     // Nice casting^^
+                    ps.setLon(Double.valueOf(lon));
+                    ps.setLat(Double.valueOf(lat));
                     ps.setBounds(new Envelope2D(builder.createPoint(Double.valueOf(lon), Double.valueOf(lat)).getEnvelope()));
                     ps.setNodeId(Long.valueOf(nodeId));
                     ps.setVersion(Integer.valueOf(version));
@@ -150,16 +161,17 @@ public class OSMParser implements Runnable {
                     if (plz != null) {
                         ps.setPlz(Integer.valueOf(plz));
                     }
-                    ps.setType(tags.get("amenity"));
+                    ps.setDataType(tags.get("amenity"));
+                    ps.setTimeStamp(Instant.parse(timeStamp));
                     ps.setOpeningHours(tags.getOrDefault("opening_hours", null));
                     ps.setOperator(tags.getOrDefault("operator", null));
                     ps.setName(tags.getOrDefault("name:en", tags.getOrDefault("name", null)));
                     ps.setStreetName(tags.getOrDefault("addr:street", null));
                     ps.setCountry(tags.getOrDefault("addr:country", null));
                     ps.setCity(tags.getOrDefault("addr:city", null));
-                    ps.setType(mode);
+                    ps.setDataType(mode);
 
-                    switch (mode) {
+                    switch (mode.toLowerCase()) {
                         case MODIFY:
                             updateNodes.add(ps);
                             break;

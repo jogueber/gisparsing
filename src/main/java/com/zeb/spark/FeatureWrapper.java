@@ -23,11 +23,11 @@ public class FeatureWrapper implements Serializable {
 
     private BoundingBox bounds;
 
+    private double lon;
 
-    public FeatureWrapper(Integer plz, BoundingBox bx) {
-        this.plz = plz;
-        this.bounds = bx;
-    }
+    private double lat;
+
+
 
     public FeatureWrapper(SimpleFeature fs) {
         this.bounds = fs.getBounds();

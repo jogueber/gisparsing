@@ -50,3 +50,4 @@ Temporary Items
 target/
 target/classes/251.osc
 src/main/scala/Spark-Gis.scala
+*.osc

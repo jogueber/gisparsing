@@ -72,15 +72,18 @@ public class MRStyle {
         Broadcast<List<FeatureWrapper>> plzLs = jc.broadcast(feat);
         logger.info("Successfully read PLZ");
 
+        Broadcast<List<String>> key = jc.broadcast(con.getStringList("spark.plz.keys"));
+
+
 
         // support wildcards
         JavaPairRDD<String, MapNode> ze = jc.wholeTextFiles(con.getString("spark.plz.inputDir")).flatMapToPair(t -> {
-            OSMParser os = new OSMParser(t._2());
+            OSMParser os = new OSMParser(t._2(), key.getValue());
             os.start();
             List<Tuple2<String, MapNode>> results = new ArrayList<>();
-            os.getUpdateNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
-            os.getNewNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
-            os.getDeleteNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getType(), e)));
+            os.getUpdateNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getDataType(), e)));
+            os.getNewNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getDataType(), e)));
+            os.getDeleteNodes().stream().forEach(e -> results.add(new Tuple2<>(e.getDataType(), e)));
             return results;
         });
 
@@ -100,19 +103,21 @@ public class MRStyle {
             MapNode ns = el._2();
             Long plz = ns.getPlz() == null ? 0L : Long.valueOf(ns.getPlz());
 
-            return RowFactory.create(ns.getTimeStamp(), ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(),
-                    ns.getName(), ns.getOperator(), ns.getType(), ns.getNodeId(), ns.getChangeSetId(), Long.valueOf(String.valueOf(ns.getVersion())),
-                    plz);
+            return RowFactory.create(ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(),
+                    ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getNodeId(), ns.getChangeSetId(), Long.valueOf(String.valueOf(ns.getVersion())),
+                    plz, ns.getLon(), ns.getLat(), ns.getTimeStamp());
         });
 
         // Write everything in one file
         // For Version 1.6.0
-        SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
+        final SQLContext sqlContext = new org.apache.spark.sql.SQLContext(jc);
 
         sqlContext.createDataFrame(converted, getSchema()).write().parquet(con.getString("spark.plz.outputDir") + "/extracts" + System.currentTimeMillis() + ".parquet");
-        converted.rdd().sa
+
 
         deleteFiles(con.getString("spark.plz.inputDir"));
+
+        jc.stop();
 
     }
 
@@ -185,7 +190,7 @@ public class MRStyle {
 
     //Notwendig weil er die Bounding box nicht mag
     public static StructType getSchema() {
-        String schemaString = "timeStamp streetName city country openingHours name operator type";
+        String schemaString = "timeStamp streetName city country openingHours name operator datatype nodeType";
         List<StructField> fields = new ArrayList<>();
         for (String fieldName : schemaString.split(" ")) {
             StructField field = DataTypes.createStructField(fieldName, DataTypes.StringType, true);
@@ -197,6 +202,15 @@ public class MRStyle {
             StructField field = DataTypes.createStructField(fieldName, DataTypes.LongType, true);
             fields.add(field);
         }
+        schemaString = "lon lat";
+        for (String fieldName : schemaString.split(" ")) {
+            StructField field = DataTypes.createStructField(fieldName, DataTypes.DoubleType, true);
+            fields.add(field);
+        }
+        schemaString = "timestamp";
+        StructField field = DataTypes.createStructField(schemaString, DataTypes.TimestampType, true);
+        fields.add(field);
+
         return DataTypes.createStructType(fields);
     }
 
@@ -208,7 +222,7 @@ public class MRStyle {
             fs.delete(new Path(path), true);
         } catch (IOException e) {
             e.printStackTrace();
-            e.initCause(new IOException("Error Deleting files!"));
+            logger.error("Error deleting files!");
         }
     }
 }
