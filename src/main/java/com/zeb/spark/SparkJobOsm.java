@@ -31,6 +31,7 @@ import scala.Tuple2;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -88,22 +89,26 @@ public class SparkJobOsm {
             Optional<FeatureWrapper> match = plzLs.value().stream().filter(e -> e.getBounds().contains(t._2().getBounds())).findFirst();
             match.ifPresent(e -> t._2().setPlz(e.getPlz()));
             //Set Country for all that are in Germany
-            match.ifPresent(e->t._2.setCountry("DE"));
+            match.ifPresent(e -> t._2.setCountry("DE"));
             return t;
         });
 
 
         final JavaRDD<Row> converted = mapped.map(el -> {
             MapNode ns = el._2();
+
+
             return RowFactory.create(
                     //String values
-                    ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(), ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getPlz(),
+                    ns.getStreetName(), ns.getCity(), ns.getCountry(), ns.getOpeningHours(), ns.getName(), ns.getOperator(), ns.getDataType(), ns.getNodeType(), ns.getPlz(), ns.getDateAsString(),
                     //Long Values
                     ns.getNodeId(), ns.getChangeSetId(), ns.getVersion(),
                     // Double Values
                     ns.getLon(), ns.getLat(),
                     //Date Values
-                    java.sql.Timestamp.from(ns.getTimeStamp()));
+                    java.sql.Timestamp.from(ns.getTimeStamp()),
+                    //Boolean
+                    ns.getWheelchair());
         });
 
         // Write everything in one file
@@ -118,9 +123,9 @@ public class SparkJobOsm {
         if (con.getBoolean("spark.plz.debug")) {
             logger.info("The result should contain " + converted.count() + " Rows");
             logger.info("Sample Output:" + converted.takeSample(false, 1).get(0).toString());
-            deleteFiles(con.getString("spark.plz.inputDir"));
         }
 
+        deleteFiles(con.getString("spark.plz.inputDir"));
 
         jc.stop();
 
@@ -195,7 +200,7 @@ public class SparkJobOsm {
 
     //Notwendig weil er die Bounding box nicht mag
     public static StructType getSchema() {
-        String schemaString = "streetName city country openingHours name operator datatype nodeType plz";
+        String schemaString = "streetName city country openingHours name operator datatype nodeType plz dateAsString";
         List<StructField> fields = new ArrayList<>();
         for (String fieldName : schemaString.split(" ")) {
             StructField field = DataTypes.createStructField(fieldName, DataTypes.StringType, true);
@@ -214,6 +219,10 @@ public class SparkJobOsm {
         }
         schemaString = "timestamp";
         StructField field = DataTypes.createStructField(schemaString, DataTypes.TimestampType, true);
+        fields.add(field);
+
+        schemaString = "wheelchair";
+        field = DataTypes.createStructField(schemaString, DataTypes.BooleanType, true);
         fields.add(field);
 
         return DataTypes.createStructType(fields);

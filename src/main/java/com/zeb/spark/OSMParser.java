@@ -17,7 +17,9 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.*;
 
 /**
@@ -49,6 +51,8 @@ public class OSMParser implements Runnable {
     private List<MapNode> deleteNodes;
     @Getter
     private List<MapNode> newNodes;
+
+    private static ZoneId zone = ZoneId.systemDefault();
 
 
     public OSMParser(InputStream is, Collection<String> keys) {
@@ -167,6 +171,7 @@ public class OSMParser implements Runnable {
                     if (plz != null) {
                         ps.setPlz((plz));
                     }
+
                     ps.setNodeType(tags.getOrDefault("amenity", tags.get("shop")));
                     ps.setTimeStamp(Instant.parse(timeStamp));
                     ps.setOpeningHours(tags.getOrDefault("opening_hours", null));
@@ -176,6 +181,11 @@ public class OSMParser implements Runnable {
                     ps.setCountry(tags.getOrDefault("addr:country", null));
                     ps.setCity(tags.getOrDefault("addr:city", null));
                     ps.setDataType(mode);
+                    String wheel = tags.getOrDefault("wheelchair", Boolean.FALSE.toString());
+                    ps.setWheelchair(wheel.equals("yes") ? true : false);
+
+                    String dateAsString = DateTimeFormatter.ISO_LOCAL_DATE.withZone(zone).format(ps.getTimeStamp());
+                    ps.setDateAsString(dateAsString);
 
                     switch (mode.toLowerCase()) {
                         case MODIFY:

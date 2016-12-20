@@ -1,20 +1,19 @@
 package com.zeb.spark;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
 /**
  * Created by jguenther on 12.12.2016.
- *
+ * <p>
  * Datatype
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class MapNode extends FeatureWrapper {
+
 
     private long nodeId;
 
@@ -36,9 +35,18 @@ public class MapNode extends FeatureWrapper {
 
     private String operator;
 
-    //UPDATE,DELETE, CREATE
-    private String dataType;
+    private String dateAsString;
 
+    /**
+     * Sets the type of record ->CREATE, Update, Delete
+     */
+    private String dataType;
+    /**
+     * Sets either amenity or shoptype
+     */
     private String nodeType;
+
+
+    private boolean wheelchair;
 
 }
